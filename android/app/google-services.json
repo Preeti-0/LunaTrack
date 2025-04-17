@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "231006373871",
+    "project_id": "lunatrack-debdd",
+    "storage_bucket": "lunatrack-debdd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:231006373871:android:cab65d5fd03585aaa1981a",
+        "android_client_info": {
+          "package_name": "com.periodtracking.lunatrack.luna_track"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADLWvn-Ss2wnZ252uzts_OJ8u-_hAsokA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
