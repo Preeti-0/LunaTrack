@@ -41,7 +41,7 @@ class Doctor {
       imageUrl: json['image_url'], // ✅ Matches the new serializer field
       education: json['education'],
       about: json['about'],
-      experience: json['experience'],
+      experience: json['experience_years'], // ✅ CORRECT FIELD NAME
       consultationFee:
           double.tryParse(json['consultation_fee'].toString()) ?? 0.0,
       availableDays:

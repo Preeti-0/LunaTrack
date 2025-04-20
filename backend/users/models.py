@@ -33,12 +33,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=255, unique=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
+    last_name = models.CharField(max_length=255, blank=True, null=True)
     role = models.CharField(max_length=50, default="user")
     reset_code = models.CharField(max_length=10, blank=True, null=True)
     profile_image = models.ImageField(upload_to='profiles/', null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)  # ✅
 
     birth_date = models.DateField(null=True, blank=True)
     cycle_regular = models.CharField(max_length=20, null=True, blank=True)
@@ -53,6 +55,16 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    def get_full_name(self):
+        return f"{self.first_name or ''} {self.last_name or ''}".strip()
+
+
+class EmailVerification(models.Model):
+    email = models.EmailField(unique=True)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
 
 # Symptom Logging Models
@@ -113,6 +125,13 @@ class PeriodLog(models.Model):
 
 # Doctor Model
 class Doctor(models.Model):
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='doctor_profile',
+        null=True,
+        blank=True
+    )
     name = models.CharField(max_length=100)
     specialization = models.CharField(max_length=100)
     experience_years = models.IntegerField()
@@ -124,26 +143,77 @@ class Doctor(models.Model):
     available_days = models.CharField(max_length=200)  # e.g. "Mon, Wed, Fri"
     available_time = models.CharField(max_length=100)  # e.g. "10:00 AM - 5:00 PM"
     image = models.ImageField(upload_to='doctors/', null=True, blank=True)
-    consultation_fee = models.DecimalField(max_digits=8, decimal_places=2, default=500.00)
-
+    consultation_fee = models.DecimalField(max_digits=8, decimal_places=2)
 
     def __str__(self):
-        return self.name
+        return f"{self.name or 'Unnamed Doctor'}"
+
+    def get_full_name(self):
+        return self.name or self.user.get_full_name() if self.user else "Doctor"
 
 
 # Appointment Model
 class Appointment(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     appointment_date = models.DateField()
     appointment_time = models.TimeField()
     reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    payment_token = models.CharField(max_length=100, null=True, blank=True)# ✅ Khalti token
-
+    payment_token = models.CharField(max_length=100, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')  # ✅ new field
 
     class Meta:
         unique_together = ('doctor', 'appointment_date', 'appointment_time')
 
     def __str__(self):
         return f"{self.user.email} with {self.doctor.name} on {self.appointment_date} at {self.appointment_time}"
+
+
+# users/models.py
+class Review(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    doctor = models.ForeignKey('Doctor', on_delete=models.CASCADE)  # String-based reference avoids circular error
+    rating = models.IntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} rated {self.doctor} - {self.rating} stars"
+
+
+
+# Adding this to models.py in my users app
+
+# users/models.py
+
+class Reminder(models.Model):
+    REMINDER_TYPES = [
+        ("log_period", "Log Your Period"),
+        ("next_period_start", "Upcoming Period Start"),
+        ("fertile_window_start", "Fertile Window Begins"),
+        ("ovulation_day", "Ovulation Day"),
+        ("appointment_booked", "Appointment Booked"),
+        ("appointment_reminder", "Appointment Reminder"),
+        ("appointment_rescheduled", "Appointment Rescheduled"),
+        ("doctor_new_appointment", "Doctor New Appointment"),
+        ("doctor_rescheduled", "Doctor Appointment Rescheduled"),
+        ("doctor_day_reminder", "Same-Day Appointment Reminder"),
+        ("custom", "Custom Reminder"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    reminder_type = models.CharField(max_length=40, choices=REMINDER_TYPES)
+    message = models.CharField(max_length=255, blank=True)
+    date = models.DateField(null=True, blank=True)
+    time = models.TimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.reminder_type} @ {self.date} {self.time or ''}"
+

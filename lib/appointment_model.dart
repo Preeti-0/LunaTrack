@@ -7,6 +7,7 @@ class Appointment {
   final DateTime? createdAt;
   final String appointmentTime;
   final String reason;
+  final String status; // <-- already declared correctly
 
   Appointment({
     required this.id,
@@ -15,6 +16,7 @@ class Appointment {
     this.createdAt,
     required this.appointmentTime,
     required this.reason,
+    required this.status,
   });
 
   factory Appointment.fromJson(Map<String, dynamic> json) {
@@ -26,9 +28,9 @@ class Appointment {
           json['created_at'] != null
               ? DateTime.parse(json['created_at'])
               : null,
-      appointmentTime:
-          json['appointment_time'], // This is a String like "11:00"
+      appointmentTime: json['appointment_time'],
       reason: json['reason'] ?? '',
+      status: json['status'] ?? 'pending', // <-- fixed this line
     );
   }
 }

@@ -27,7 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> fetchUserProfile() async {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = prefs.getString('access'); // ✅ fixed key
 
     if (token == null) {
       print("⚠️ No access token found");

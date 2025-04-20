@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'doctor_model.dart';
-import 'doctor_detail_screen.dart';
+import 'edit_doctor_profile_screen.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({Key? key}) : super(key: key);
@@ -11,25 +11,25 @@ class DoctorProfileScreen extends StatefulWidget {
 }
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
-  List<Doctor> doctors = [];
-  bool isLoading = true;
+  Doctor? doctor;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchDoctors();
+    loadDoctorProfile();
   }
 
-  Future<void> fetchDoctors() async {
+  Future<void> loadDoctorProfile() async {
     try {
-      final fetchedDoctors = await ApiService.fetchDoctors();
+      final fetchedDoctor = await ApiService.fetchLoggedInDoctor();
       setState(() {
-        doctors = fetchedDoctors;
-        isLoading = false;
+        doctor = fetchedDoctor;
+        _isLoading = false;
       });
     } catch (e) {
-      setState(() => isLoading = false);
-      print("❌ Failed to fetch doctors: $e");
+      print("❌ Error loading profile: $e");
+      setState(() => _isLoading = false);
     }
   }
 
@@ -37,148 +37,167 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Consult Doctor"),
-        centerTitle: true,
+        title: const Text("My Profile"),
         backgroundColor: Colors.pinkAccent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              if (doctor == null) return;
+
+              final updatedData = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => EditDoctorProfileScreen(
+                        currentProfile: {
+                          'name': doctor!.name,
+                          'specialization': doctor!.specialization,
+                          'location': doctor!.location ?? '',
+                          'experience': doctor!.experience ?? '',
+                          'phone': doctor!.phone ?? '',
+                          'education': doctor!.education ?? '',
+                          'about': doctor!.about ?? '',
+                          'available_days': doctor!.availableDays ?? [],
+                          'available_time': doctor!.availableTime ?? [],
+                          'consultation_fee': doctor!.consultationFee
+                              .toStringAsFixed(2),
+                          'image': doctor!.imageUrl ?? '',
+                        },
+                      ),
+                ),
+              );
+
+              if (updatedData != null) {
+                await loadDoctorProfile(); // Refresh profile
+              }
+            },
+          ),
+        ],
       ),
       body:
-          isLoading
+          _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                itemCount: doctors.length,
-                itemBuilder: (context, index) {
-                  final doctor = doctors[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 3,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 35,
-                            backgroundImage:
-                                doctor.imageUrl != null &&
-                                        doctor.imageUrl!.isNotEmpty
-                                    ? NetworkImage(doctor.imageUrl!)
-                                    : const AssetImage(
-                                          "assets/icons/doctor_placeholder.png",
-                                        )
-                                        as ImageProvider,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  doctor.name,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  doctor.specialization,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                if (doctor.rating != null &&
-                                    doctor.rating! > 0) ...[
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.star,
-                                        size: 16,
-                                        color: Colors.amber,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "${doctor.rating!.toStringAsFixed(1)} / 5.0",
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                                if (doctor.location != null &&
-                                    doctor.location!.isNotEmpty) ...[
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on_outlined,
-                                        size: 16,
-                                        color: Colors.grey,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          doctor.location!,
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                                const SizedBox(height: 6),
-                                Text(
-                                  "Available: ${doctor.availableDays?.join(', ') ?? 'Mon - Fri'}",
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                Text(
-                                  "Time: ${doctor.availableTime?.join(', ') ?? '10:00 AM - 5:00 PM'}",
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) =>
-                                          DoctorDetailScreen(doctor: doctor),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purple.shade100,
-                              foregroundColor: Colors.black87,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text("Book"),
-                          ),
-                        ],
+              : doctor == null
+              ? const Center(child: Text("Doctor profile not found."))
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundImage:
+                            doctor!.imageUrl != null
+                                ? NetworkImage(doctor!.imageUrl!)
+                                : null,
+                        child:
+                            doctor!.imageUrl == null
+                                ? const Icon(Icons.person, size: 50)
+                                : null,
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(height: 20),
+                    _buildInfo("Name", doctor!.name),
+                    _buildInfo("Specialization", doctor!.specialization),
+                    _buildInfo("Phone", doctor!.phone ?? 'Not available'),
+                    _buildInfo("Location", doctor!.location ?? 'Not available'),
+                    _buildInfo(
+                      "Experience",
+                      doctor!.experience != null
+                          ? "${doctor!.experience} yrs"
+                          : 'Not available',
+                    ),
+                    _buildInfo(
+                      "Education",
+                      doctor!.education ?? 'Not available',
+                    ),
+                    _buildInfo(
+                      "Consultation Fee",
+                      "Rs. ${doctor!.consultationFee.toStringAsFixed(2)}",
+                    ),
+                    _buildInfo("About", doctor!.about ?? 'Not available'),
+                    _buildInfo(
+                      "Working Days",
+                      doctor!.availableDays != null
+                          ? doctor!.availableDays!.join(', ')
+                          : 'Not available',
+                    ),
+                    _buildInfo(
+                      "Working Time",
+                      doctor!.availableTime != null
+                          ? doctor!.availableTime!.join(', ')
+                          : 'Not available',
+                    ),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final updatedData = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => EditDoctorProfileScreen(
+                                    currentProfile: {
+                                      'name': doctor?.name ?? '',
+                                      'specialization':
+                                          doctor?.specialization ?? '',
+                                      'location': doctor?.location ?? '',
+                                      'experience': doctor?.experience ?? '',
+                                      'phone': doctor?.phone ?? '',
+                                      'education': doctor?.education ?? '',
+                                      'about': doctor?.about ?? '',
+                                      'available_days':
+                                          doctor?.availableDays ?? [],
+                                      'available_time':
+                                          doctor?.availableTime ?? [],
+                                      'consultation_fee': doctor!
+                                          .consultationFee
+                                          .toStringAsFixed(2),
+                                      'image': doctor?.imageUrl ?? '',
+                                    },
+                                  ),
+                            ),
+                          );
+
+                          if (updatedData != null) {
+                            await loadDoctorProfile();
+                          }
+                        },
+                        icon: const Icon(Icons.edit),
+                        label: const Text("Edit Profile"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purple,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+    );
+  }
+
+  Widget _buildInfo(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$label: ",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 16))),
+        ],
+      ),
     );
   }
 }

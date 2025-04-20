@@ -2,8 +2,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser, Doctor, Appointment
-
-
+from django.contrib import admin
+from .models import Review
+admin.site.register(Review)
 # 🔹 Admin for Custom Users
 class CustomUserAdmin(UserAdmin):
     list_display = ('email', 'username', 'is_staff', 'is_active', 'role')
@@ -25,3 +26,4 @@ class AppointmentAdmin(admin.ModelAdmin):
     list_display = ('user', 'doctor', 'appointment_date', 'appointment_time', 'created_at')
     search_fields = ('user__email', 'doctor__name', 'reason')
     list_filter = ('appointment_date',)
+

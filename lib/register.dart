@@ -29,6 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       role = "admin";
     }
 
+    // Step 1: Register user
     bool success = await ApiService.registerUser(
       _usernameController.text.trim(),
       _emailController.text.trim(),
@@ -36,12 +37,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
       role,
     );
 
+    if (!success) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Registration failed. Email already exists.")),
+      );
+      return;
+    }
+
+    // Step 2: Log in user immediately after registration
+    final loginResponse = await ApiService.loginUser(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+
     setState(() => _isLoading = false);
 
-    if (success) {
+    if (loginResponse.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Registration successful! Let’s get to know you..."),
+          content: Text("🎉 Registration successful! Let’s get to know you..."),
         ),
       );
       Navigator.pushReplacement(
@@ -50,7 +65,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Registration failed. Email already exists.")),
+        SnackBar(
+          content: Text(
+            "Login failed after registration. Please log in manually.",
+          ),
+        ),
       );
     }
   }

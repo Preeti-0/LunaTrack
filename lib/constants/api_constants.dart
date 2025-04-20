@@ -5,4 +5,6 @@
 const String baseUrl = 'http://192.168.1.70:8000'; // ✅ Correct//home ip address
 
 //const String baseUrl = 'http://192.168.1.83:8000'; // ✅ Correct//ranu home ip address
-//const String baseUrl = 'http://192.168.140.201:8000'; //my phone ip address
+//const String baseUrl = 'http://192.168.140.201:8000'; //my phone ip addres
+//const String baseUrl =  'http://192.168.50.201:8000';
+//my phone ip addres

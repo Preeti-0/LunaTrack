@@ -2,10 +2,10 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
+import '../services/api_service.dart';
 import '../constants/api_constants.dart';
 import 'calendar_page.dart';
 import 'prediction_utils.dart';
@@ -116,30 +116,23 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> fetchUserName() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
-    if (token == null) return;
-
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/profile/'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (!mounted) return;
-        setState(() {
-          userName = data['first_name'] ?? "";
-        });
-      }
-    } catch (e) {
-      print("❌ Error fetching name: $e");
+    final profile = await ApiService.getUserProfile();
+    if (profile != null) {
+      setState(() {
+        userName =
+            profile['first_name'] ??
+            profile['username'] ??
+            profile['email'] ??
+            'User';
+      });
+    } else {
+      print("❌ Failed to load profile.");
     }
   }
 
   Future<void> calculatePredictions() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = prefs.getString('access');
     final cycleLength =
         int.tryParse(prefs.getString('cycle_length') ?? "28") ?? 28;
 
@@ -218,6 +211,7 @@ class _HomeTabState extends State<HomeTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top Bar
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -226,7 +220,29 @@ class _HomeTabState extends State<HomeTab> {
                   "Hi, ${userName.isNotEmpty ? userName : 'User'}",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                Icon(Icons.notifications_none_outlined),
+                Stack(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.notifications_none_outlined),
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/reminders');
+                      },
+                    ),
+                    // Red Dot Badge (you can change count later)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: BoxConstraints(minWidth: 8, minHeight: 8),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
             SizedBox(height: 6),
@@ -237,6 +253,8 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
             SizedBox(height: 16),
+
+            // Week Calendar Row
             SizedBox(
               height: 68,
               child: Row(
@@ -282,7 +300,10 @@ class _HomeTabState extends State<HomeTab> {
                 }),
               ),
             ),
+
             SizedBox(height: 30),
+
+            // Main Prediction Bubble
             Center(
               child: Container(
                 width: screenWidth * 0.6,
@@ -304,7 +325,9 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
             ),
+
             SizedBox(height: 16),
+
             Center(
               child: ElevatedButton(
                 onPressed: widget.onNavigateToCalendar,
@@ -321,12 +344,15 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
             ),
+
             SizedBox(height: 32),
             Text(
               "My Tools",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
+
+            // Tools Grid
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -405,7 +431,6 @@ class _HomeTabState extends State<HomeTab> {
                         MaterialPageRoute(builder: (_) => ExerciseScreen()),
                       ),
                 ),
-
                 toolCard(
                   context,
                   "Read Blog",

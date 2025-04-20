@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'appointment_model.dart';
 import '../services/api_service.dart';
+import 'reschedule_modal.dart';
 
 class AppointmentScreen extends StatefulWidget {
   @override
@@ -77,19 +78,54 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              appt.doctor.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              appt.doctor.specialization,
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        appt.doctor.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        appt.doctor.specialization,
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Status Chip
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        appt.status == 'completed'
+                                            ? Colors.green
+                                            : Colors.amber,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    appt.status == 'completed'
+                                        ? 'Completed'
+                                        : 'Pending',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -98,6 +134,28 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                             Text('🕒 ${appt.appointmentTime}'),
                             const SizedBox(height: 4),
                             Text('📝 Reason: ${appt.reason}'),
+                            const SizedBox(height: 4),
+
+                            // ✅ Insert this check here:
+                            if (appt.status == 'pending')
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  child: const Text("Reschedule"),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder:
+                                          (_) => RescheduleModal(
+                                            appointmentId: appt.id,
+                                            currentDate: appt.appointmentDate,
+                                            currentTime: appt.appointmentTime,
+                                          ),
+                                    );
+                                  },
+                                ),
+                              ),
+
                             const SizedBox(height: 4),
                             Text(
                               appt.createdAt != null

@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
 from .models import (
     Symptom, SymptomLog, MenstrualFlow, DigestionSymptom, DigestionLog,
-    CustomUser, PeriodLog, Doctor, Appointment
+    CustomUser, PeriodLog, Doctor, Appointment, Doctor, Review, Reminder
 )
 
 User = get_user_model()
@@ -25,6 +25,34 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
             'refresh': str(refresh),
             'access': str(refresh.access_token),
         }
+
+#doctor side login by the admin
+
+# serializers.py
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['role'] = user.role  # <- ✅ This is the key
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['role'] = self.user.role  # <- ✅ Flutter uses this key
+        data['email'] = self.user.email
+        data['first_name'] = self.user.first_name
+        data['username'] = self.user.username
+
+        # Optional: add image
+        if self.user.profile_image:
+            request = self.context.get("request")
+            data['profile_image'] = request.build_absolute_uri(self.user.profile_image.url) if request else self.user.profile_image.url
+        else:
+            data['profile_image'] = None
+
+        return data
+
 
 # 🔹 Symptom Serializers
 class SymptomSerializer(serializers.ModelSerializer):
@@ -72,29 +100,74 @@ class PeriodLogSerializer(serializers.ModelSerializer):
 
 # 🩺 Doctor Serializer
 class DoctorSerializer(serializers.ModelSerializer):
-    available_days = serializers.SerializerMethodField()
-    available_time = serializers.SerializerMethodField()
-    image_url = serializers.SerializerMethodField()  # ✅ Renamed from image → image_url
+    # ✅ Handle list input for these fields
+    available_days = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        required=False
+    )
+    available_time = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        required=False
+    )
+
+    # ✅ New fields for user creation
+    email = serializers.EmailField(write_only=True, required=False)
+    password = serializers.CharField(write_only=True, required=False)
+
+    # ✅ Computed read-only fields
+    image_url = serializers.SerializerMethodField(read_only=True)
+    consultation_fee = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Doctor
         fields = [
             'id', 'name', 'specialization', 'experience_years',
             'location', 'phone', 'education', 'rating', 'about',
-            'available_days', 'available_time', 'image_url', 'consultation_fee'
+            'available_days', 'available_time', 'image_url',
+            'consultation_fee', 'email', 'password'
         ]
+        read_only_fields = ['rating', 'image_url', 'id']
 
-    def get_available_days(self, obj):
-        return [day.strip() for day in obj.available_days.split(',')] if obj.available_days else []
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['available_days'] = [d.strip() for d in instance.available_days.split(',')] if instance.available_days else []
+        rep['available_time'] = [t.strip() for t in instance.available_time.split(',')] if instance.available_time else []
+        return rep
 
-    def get_available_time(self, obj):
-        return [time.strip() for time in obj.available_time.split(',')] if obj.available_time else []
+    def create(self, validated_data):
+        email = validated_data.pop('email', None)
+        password = validated_data.pop('password', None)
+
+        if not email or not password:
+            raise serializers.ValidationError("Email and password are required to add a doctor.")
+
+        # Convert list input to comma-separated strings
+        available_days = validated_data.pop('available_days', [])
+        available_time = validated_data.pop('available_time', [])
+        validated_data['available_days'] = ', '.join(available_days)
+        validated_data['available_time'] = ', '.join(available_time)
+
+        # Create associated user
+        user = CustomUser.objects.create_user(email=email, password=password, is_doctor=True)
+        return Doctor.objects.create(user=user, **validated_data)
+
+    def update(self, instance, validated_data):
+        if 'available_days' in validated_data:
+            instance.available_days = ', '.join(validated_data.pop('available_days'))
+        if 'available_time' in validated_data:
+            instance.available_time = ', '.join(validated_data.pop('available_time'))
+        return super().update(instance, validated_data)
 
     def get_image_url(self, obj):
         if obj.image:
             request = self.context.get('request')
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url
         return None
+
+    def get_consultation_fee(self, obj):
+        return float(obj.consultation_fee) if obj.consultation_fee else 0.0
 
 
 # 📅 Appointment Serializer
@@ -110,5 +183,28 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'id',
             'doctor', 'doctor_id',
             'appointment_date', 'appointment_time',
-            'reason', 'created_at'
+            'reason', 'created_at', 'payment_token',
+            'status'  # ✅ new field
         ]
+
+
+
+class DoctorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Doctor
+        fields = '__all__'
+
+
+# users/serializers.py
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+
+
+
+class ReminderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reminder
+        fields = '__all__'
+        read_only_fields = ['user', 'created_at']

@@ -35,7 +35,7 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
 
     setState(() => _isSubmitting = true);
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = prefs.getString('access');
 
     if (token == null) {
       setState(() => _isSubmitting = false);

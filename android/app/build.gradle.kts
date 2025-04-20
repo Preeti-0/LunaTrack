@@ -6,36 +6,38 @@ plugins {
 
 android {
     namespace = "com.periodtracking.lunatrack.luna_track"
-    compileSdk = 35 // ✅ Use a valid SDK version
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.periodtracking.lunatrack.luna_track"
-        minSdk = 23 // ✅ Firebase plugins & most tools require at least 23
+        minSdk = 23
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+
+        // ✅ Enable core library desugaring
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = true // Enable R8 or ProGuard
-            isShrinkResources = true // Shrink unused resources
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
     }
-
 }
 
 flutter {
@@ -43,5 +45,8 @@ flutter {
 }
 
 dependencies {
-    // Add required dependencies here when needed
+    // ✅ Add desugaring library
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // Other dependencies can go here
 }

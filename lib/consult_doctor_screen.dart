@@ -40,7 +40,10 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
             itemBuilder: (context, index) {
               final doc = doctors[index];
               return Card(
-                margin: const EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -156,7 +159,7 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple.shade100,
+                          backgroundColor: Colors.pink.shade100,
                           foregroundColor: Colors.black87,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

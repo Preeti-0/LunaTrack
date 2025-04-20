@@ -30,6 +30,14 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
     "18:00",
   ];
 
+  late List<String> workingDays; // Parsed working days
+
+  @override
+  void initState() {
+    super.initState();
+    workingDays = widget.doctor.availableDays ?? [];
+  }
+
   @override
   void dispose() {
     _reasonController.dispose();
@@ -42,7 +50,12 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 30)),
+      selectableDayPredicate: (DateTime date) {
+        final weekday = DateFormat('EEE').format(date);
+        return workingDays.contains(weekday);
+      },
     );
+
     if (picked != null) {
       setState(() {
         selectedDate = picked;
@@ -104,13 +117,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
               label: Text(time),
               selected: isSelected,
               onSelected:
-                  isBooked
-                      ? null
-                      : (_) {
-                        setState(() {
-                          selectedTime = time;
-                        });
-                      },
+                  isBooked ? null : (_) => setState(() => selectedTime = time),
               selectedColor: Colors.pink.shade100,
               disabledColor: Colors.grey.shade300,
               backgroundColor: Colors.grey.shade100,

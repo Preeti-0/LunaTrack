@@ -24,6 +24,7 @@ INSTALLED_APPS = [
 
     # Custom apps
     'users',
+    'drf_yasg',
 ]
 
 # Middleware
@@ -138,3 +139,17 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'lunatrackk@gmail.com'
 EMAIL_HOST_PASSWORD = 'mtqcgdfmbesdjubh'
+
+
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+        }
+    },
+}
+
+LOGIN_URL = '/admin/login/'

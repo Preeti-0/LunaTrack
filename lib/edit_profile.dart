@@ -29,7 +29,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> fetchProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = prefs.getString('access');
 
     final response = await http.get(
       Uri.parse('$baseUrl/api/profile/'),
